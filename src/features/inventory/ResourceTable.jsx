@@ -46,7 +46,7 @@ export default function ResourceTable({ resources, aiStatus, editedIds, onSelect
                 className={`is-clickable${aiStatus === 'success' && status === 'SOLD_OUT' ? ' is-soldout' : ''}`}
                 onClick={() => onSelect(r.resource_id)}
               >
-                <th scope="row">
+                <th scope="row" className="resource-name-cell">
                   <span className="cell-line">
                     <button
                       type="button"
@@ -63,8 +63,8 @@ export default function ResourceTable({ resources, aiStatus, editedIds, onSelect
                     {editedIds.has(r.resource_id) && <span className="chip chip-edited">수정됨</span>}
                   </span>
                 </th>
-                <td className="num cell-ellipsis">{formatQty(r.stock, r.unit)}</td>
-                <td>
+                <td className="num resource-qty-cell"><span className="resource-qty-value">{formatQty(r.stock, r.unit)}</span></td>
+                <td className="resource-exp-cell">
                   {r.expiration_date ? (
                     <span className="expiry">
                       {r.expiration_date}
@@ -74,8 +74,8 @@ export default function ResourceTable({ resources, aiStatus, editedIds, onSelect
                     <span className="muted">—</span>
                   )}
                 </td>
-                <td>{aiCell(() => (status ? <StatusBadge status={status} /> : <span className="muted">—</span>))}</td>
-                <td>
+                <td className="resource-status-cell">{aiCell(() => (status ? <StatusBadge status={status} /> : <span className="muted">—</span>))}</td>
+                <td className="resource-ai-cell">
                   {aiCell(() =>
                     aiText ? (
                       <span className={`judgement cell-ellipsis tone-${alert ? alert.tone : 'ok'}`} title={aiText}>
