@@ -9,7 +9,7 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
   const toast = useToast();
   const [current, setCurrent] = useState({ status: 'loading', items: [], error: null });
   const [editing, setEditing] = useState({});
-  const [recommend, setRecommend] = useState({ status: 'loading', items: [], error: null });
+  const [recommend, setRecommend] = useState({ status: 'loading', items: [], summary: '', error: null });
   const [values, setValues] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -27,12 +27,12 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
   }, []);
 
   const loadRecommendation = useCallback(async () => {
-    setRecommend({ status: 'loading', items: [], error: null });
+    setRecommend({ status: 'loading', items: [], summary: '', error: null });
     try {
-      const items = await getTargetSalesRecommendation();
-      setRecommend({ status: 'success', items, error: null });
+      const result = await getTargetSalesRecommendation();
+      setRecommend({ status: 'success', items: result.items, summary: result.summary, error: null });
     } catch (e) {
-      setRecommend({ status: 'error', items: [], error: e.message });
+      setRecommend({ status: 'error', items: [], summary: '', error: e.message });
     }
   }, []);
 
@@ -114,24 +114,49 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
           </div>
         }
       >
-        <div className="target-modal-guide">현재 목표량을 확인한 뒤 필요한 메뉴만 <strong>변경하기</strong>를 눌러 수정하세요.</div>
-
-        <section className="target-ai-recommend" aria-label="Hi-An 추천 목표 판매량">
+        <section className="target-ai-recommend target-ai-recommend-feature" aria-label="Hi-An 추천 목표 판매량">
           <div className="target-ai-recommend-head">
             <div>
               <span className="ai-pill">✦ Hi-An AI</span>
-              <strong>오늘의 추천 목표 판매량</strong>
+              <div>
+                <strong>AI 추천 오늘 목표 판매량</strong>
+                <p>최근 판매량과 현재 재료 재고를 함께 반영해 오늘 목표 판매량을 추천해요.</p>
+              </div>
             </div>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={loadRecommendation} disabled={recommend.status === 'loading'}>
-              {recommend.status === 'loading' ? '추천 계산중...' : '추천 다시받기'}
-            </button>
+            <div className="target-ai-actions">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={loadRecommendation} disabled={recommend.status === 'loading'}>
+                {recommend.status === 'loading' ? '추천 계산중...' : '다시 추천'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm target-apply-recommend"
+                disabled={recommend.status !== 'success' || !recommend.items.length || current.status !== 'success'}
+                onClick={() => {
+                  const nextEditing = {};
+                  const nextValues = {};
+                  current.items.forEach((item) => {
+                    const rec = recommendationFor(item);
+                    if (rec?.recommended == null) return;
+                    nextEditing[item.item_id] = true;
+                    nextValues[item.item_id] = String(rec.recommended);
+                  });
+                  setEditing((s) => ({ ...s, ...nextEditing }));
+                  setValues((s) => ({ ...s, ...nextValues }));
+                  setErrors({});
+                }}
+              >
+                적용하기
+              </button>
+            </div>
           </div>
           {recommend.status === 'loading' ? (
-            <p className="target-ai-recommend-state">현재 재료 재고를 기준으로 목표 판매량을 계산하고 있어요...</p>
+            <p className="target-ai-recommend-state">판매 이력과 재료 재고를 분석해 추천 목표량을 계산하고 있어요...</p>
           ) : recommend.status === 'error' ? (
             <p className="target-ai-recommend-state is-error">추천을 불러오지 못했어요. {recommend.error}</p>
           ) : recommend.items.length ? (
-            <div className="target-ai-recommend-grid">
+            <>
+              {recommend.summary && <p className="target-ai-summary">{recommend.summary}</p>}
+              <div className="target-ai-recommend-grid">
               {current.items.map((item) => {
                 const rec = recommendationFor(item);
                 if (!rec || rec.recommended == null) return null;
@@ -142,7 +167,8 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
                   </div>
                 );
               })}
-            </div>
+              </div>
+            </>
           ) : (
             <p className="target-ai-recommend-state">추천 결과가 없어요.</p>
           )}
@@ -166,10 +192,7 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
                   <div className="target-current-block">
                     <span className="target-label">현재</span>
                     <span className="target-current"><strong>{item.stock ?? 0}개</strong></span>
-                    {(() => {
-                      const rec = recommendationFor(item);
-                      return rec?.recommended != null ? <span className="target-row-rec">추천 {rec.recommended}개</span> : null;
-                    })()}
+
                   </div>
                   <div className="target-edit-area">
                     {!isEditing ? (

@@ -1795,6 +1795,15 @@ textarea {
   font-size: 13px;
 }
 .target-ai-recommend-state.is-error { color: var(--danger-ink); }
+.target-ai-summary {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.72);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 650;
+}
 .target-ai-recommend-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1836,4 +1845,149 @@ textarea {
 }
 @media (max-width: 760px) {
   .target-ai-recommend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- v1.2 target recommendation + resource table polish ---------- */
+.target-ai-recommend-feature {
+  margin: 2px 0 18px;
+  padding: 18px 20px;
+  border: 1px solid rgba(0, 150, 138, .18);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(224, 249, 245, .92), rgba(248, 255, 253, .98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+}
+.target-ai-recommend-feature .target-ai-recommend-head {
+  align-items: flex-start;
+}
+.target-ai-recommend-feature .target-ai-recommend-head > div:first-child {
+  align-items: flex-start;
+}
+.target-ai-recommend-feature .target-ai-recommend-head > div:first-child > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.target-ai-recommend-feature .target-ai-recommend-head p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.target-ai-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.target-apply-recommend {
+  min-width: 82px;
+}
+.target-ai-recommend-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 9px;
+  margin-top: 15px;
+}
+.target-ai-recommend-item {
+  min-height: 42px;
+  padding: 10px 12px;
+  border-color: rgba(0, 150, 138, .14);
+  border-radius: 12px;
+  background: rgba(255,255,255,.9);
+}
+.target-ai-recommend-item strong {
+  font-size: 14px;
+}
+
+/* 재료 재고 표: 이름쪽 여백을 줄이고 정보 컬럼을 균형 있게 배치 */
+.resource-table {
+  min-width: 920px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.resource-table .col-name { width: 22%; }
+.resource-table .col-qty { width: 14%; }
+.resource-table .col-exp { width: 20%; }
+.resource-table .col-status { width: 16%; }
+.resource-table .col-ai { width: 25%; }
+.resource-table .col-chevron { width: 3%; }
+.resource-table thead th {
+  height: 48px;
+  padding-top: 0;
+  padding-bottom: 0;
+  background: #f3f7f6;
+  color: #51605e;
+  font-size: 12.5px;
+  font-weight: 750;
+  letter-spacing: -.01em;
+}
+.resource-table th,
+.resource-table td {
+  height: 62px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+.resource-table th:first-child,
+.resource-table td:first-child {
+  padding-left: 22px;
+  padding-right: 14px;
+}
+.resource-table th:nth-child(3),
+.resource-table td:nth-child(3),
+.resource-table th:nth-child(4),
+.resource-table td:nth-child(4),
+.resource-table th:nth-child(5),
+.resource-table td:nth-child(5) {
+  padding-left: 18px;
+}
+.resource-table tbody tr > * {
+  background: var(--surface);
+  transition: background .16s ease, box-shadow .16s ease;
+}
+.resource-table tbody tr.is-clickable:hover > * {
+  background: #f8fcfb;
+}
+.resource-table tbody tr.is-clickable:hover > th:first-child {
+  box-shadow: inset 3px 0 0 var(--mint);
+}
+.resource-name-cell .row-link {
+  font-size: 15.5px;
+  font-weight: 750;
+}
+.resource-qty-cell {
+  text-align: right !important;
+}
+.resource-qty-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 84px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.resource-exp-cell .expiry {
+  gap: 7px;
+}
+.resource-status-cell {
+  overflow: visible !important;
+}
+.resource-ai-cell .judgement {
+  max-width: 100%;
+  padding: 6px 9px;
+  border-radius: 9px;
+  background: rgba(0, 190, 172, .055);
+}
+.resource-ai-cell .judgement.tone-warn,
+.resource-ai-cell .judgement.tone-danger {
+  background: rgba(245, 158, 11, .07);
+}
+
+@media (max-width: 760px) {
+  .target-ai-recommend-feature .target-ai-recommend-head {
+    flex-direction: column;
+  }
+  .target-ai-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
