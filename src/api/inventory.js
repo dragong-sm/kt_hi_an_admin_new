@@ -119,22 +119,35 @@ export async function getTargetSalesItems() {
  * response: { store_id, sales_targets: [{ item_id, recommended_stock }], summary }
  */
 export async function getTargetSalesRecommendation({ growth_rate } = {}) {
-  const data = await post(ENDPOINTS.recommendStock, {
+  const raw = await post(ENDPOINTS.recommendStock, {
     store_id: STORE_ID,
     ...(growth_rate != null && growth_rate !== '' ? { growth_rate: Number(growth_rate) } : {}),
   });
 
-  const list = Array.isArray(data?.sales_targets)
-    ? data.sales_targets
-    : Array.isArray(data?.data?.sales_targets)
-      ? data.data.sales_targets
+  // 실제 n8n 응답 예시:
+  // [{ output: { sales_targets: [...], summary: '...' } }]
+  // 객체/배열/문자열 JSON 및 output 래핑을 모두 안전하게 해제한다.
+  let data = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch {}
+  }
+
+  let output = data?.output ?? data?.data?.output ?? data;
+  if (typeof output === 'string') {
+    try { output = JSON.parse(output); } catch {}
+  }
+
+  const list = Array.isArray(output?.sales_targets)
+    ? output.sales_targets
+    : Array.isArray(output?.data?.sales_targets)
+      ? output.data.sales_targets
       : null;
 
   if (!list) throw new ApiError('목표 판매량 추천 응답 형식을 확인할 수 없습니다.', 'INVALID_RESPONSE');
 
   return {
-    store_id: str(data?.store_id || data?.data?.store_id || STORE_ID),
-    summary: str(data?.summary || data?.data?.summary),
+    store_id: str(output?.store_id || output?.data?.store_id || data?.store_id || STORE_ID),
+    summary: str(output?.summary || output?.data?.summary),
     items: list
       .filter((r) => r?.item_id)
       .map((r) => ({

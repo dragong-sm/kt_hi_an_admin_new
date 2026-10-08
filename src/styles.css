@@ -1795,6 +1795,15 @@ textarea {
   font-size: 13px;
 }
 .target-ai-recommend-state.is-error { color: var(--danger-ink); }
+.target-ai-summary {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.72);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 650;
+}
 .target-ai-recommend-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1981,4 +1990,90 @@ textarea {
     width: 100%;
     justify-content: flex-end;
   }
+}
+
+/* ---------- v1.6 recommendation result presentation ---------- */
+.target-ai-result-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 16px;
+  padding: 13px 14px;
+  border: 1px solid rgba(0, 150, 138, .14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .78);
+}
+.target-ai-result-bar > div {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+.target-ai-result-label {
+  flex: 0 0 auto;
+  color: var(--mint-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+.target-ai-result-bar strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-1);
+  font-size: 13px;
+  font-weight: 750;
+}
+.target-ai-result-count {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(0, 190, 172, .10);
+  color: var(--mint-ink);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.target-ai-recommend-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.target-ai-recommend-item {
+  align-items: center;
+  min-height: 58px;
+  padding: 11px 12px;
+}
+.target-ai-rec-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.target-ai-rec-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-1) !important;
+  font-size: 13px !important;
+  font-weight: 750;
+}
+.target-ai-rec-copy small {
+  color: var(--ink-3);
+  font-size: 10.5px;
+}
+.target-ai-recommend-item strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-size: 20px;
+  font-weight: 850;
+}
+.target-ai-recommend-item strong em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 750;
+}
+@media (max-width: 900px) {
+  .target-ai-recommend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .target-ai-result-bar { align-items: flex-start; }
+  .target-ai-result-bar > div { flex-direction: column; align-items: flex-start; gap: 3px; }
 }

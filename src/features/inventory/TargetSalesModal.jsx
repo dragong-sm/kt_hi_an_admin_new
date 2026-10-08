@@ -9,7 +9,7 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
   const toast = useToast();
   const [current, setCurrent] = useState({ status: 'loading', items: [], error: null });
   const [editing, setEditing] = useState({});
-  const [recommend, setRecommend] = useState({ status: 'loading', items: [], error: null });
+  const [recommend, setRecommend] = useState({ status: 'loading', items: [], summary: '', error: null });
   const [values, setValues] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -27,12 +27,12 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
   }, []);
 
   const loadRecommendation = useCallback(async () => {
-    setRecommend({ status: 'loading', items: [], error: null });
+    setRecommend({ status: 'loading', items: [], summary: '', error: null });
     try {
-      const items = await getTargetSalesRecommendation();
-      setRecommend({ status: 'success', items, error: null });
+      const result = await getTargetSalesRecommendation();
+      setRecommend({ status: 'success', items: result.items, summary: result.summary, error: null });
     } catch (e) {
-      setRecommend({ status: 'error', items: [], error: e.message });
+      setRecommend({ status: 'error', items: [], summary: '', error: e.message });
     }
   }, []);
 
@@ -120,7 +120,7 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
               <span className="ai-pill">✦ Hi-An AI</span>
               <div>
                 <strong>AI 추천 오늘 목표 판매량</strong>
-                <p>현재 재료 재고를 기준으로 오늘 판매 목표를 추천해요.</p>
+                <p>최근 판매량과 현재 재료 재고를 함께 반영해 오늘 목표 판매량을 추천해요.</p>
               </div>
             </div>
             <div className="target-ai-actions">
@@ -134,9 +134,9 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
                 onClick={() => {
                   const nextEditing = {};
                   const nextValues = {};
-                  current.items.forEach((item) => {
-                    const rec = recommendationFor(item);
-                    if (rec?.recommended == null) return;
+                  recommend.items.forEach((rec) => {
+                    const item = current.items.find((row) => row.item_id === rec.item_id);
+                    if (!item || rec.recommended == null) return;
                     nextEditing[item.item_id] = true;
                     nextValues[item.item_id] = String(rec.recommended);
                   });
@@ -150,24 +150,35 @@ export default function TargetSalesModal({ open, onClose, onSaved }) {
             </div>
           </div>
           {recommend.status === 'loading' ? (
-            <p className="target-ai-recommend-state">현재 재료 재고를 분석해 추천 목표량을 계산하고 있어요...</p>
+            <p className="target-ai-recommend-state">판매 이력과 재료 재고를 분석해 추천 목표량을 계산하고 있어요...</p>
           ) : recommend.status === 'error' ? (
             <p className="target-ai-recommend-state is-error">추천을 불러오지 못했어요. {recommend.error}</p>
           ) : recommend.items.length ? (
-            <div className="target-ai-recommend-grid">
-              {current.items.map((item) => {
-                const rec = recommendationFor(item);
-                if (!rec || rec.recommended == null) return null;
-                return (
-                  <div key={`rec-${item.item_id}`} className="target-ai-recommend-item">
-                    <span>{item.name}</span>
-                    <strong>{rec.recommended}개</strong>
-                  </div>
-                );
-              })}
-            </div>
+            <>
+              <div className="target-ai-result-bar">
+                <div>
+                  <span className="target-ai-result-label">AI 분석 결과</span>
+                  <strong>{recommend.summary || '메뉴별 추천 목표량을 확인해 주세요.'}</strong>
+                </div>
+                <span className="target-ai-result-count">{recommend.items.length}개 메뉴 추천</span>
+              </div>
+              <div className="target-ai-recommend-grid">
+                {recommend.items.map((rec) => {
+                  const menu = current.items.find((item) => item.item_id === rec.item_id);
+                  return (
+                    <div key={`rec-${rec.item_id}`} className="target-ai-recommend-item">
+                      <div className="target-ai-rec-copy">
+                        <span className="target-ai-rec-name">{menu?.name || rec.item_id}</span>
+                        <small>{rec.item_id}</small>
+                      </div>
+                      <strong>{rec.recommended}<em>개</em></strong>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           ) : (
-            <p className="target-ai-recommend-state">추천 결과가 없어요.</p>
+            <p className="target-ai-recommend-state">추천 결과가 없어요. 다시 추천을 눌러 최신 추천값을 불러와 주세요.</p>
           )}
         </section>
 
