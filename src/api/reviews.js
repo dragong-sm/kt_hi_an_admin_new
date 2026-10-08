@@ -20,7 +20,9 @@ function menuList(v) {
  * 필드명이 달라지면 이 함수에서만 맞춥니다. 반환: { [review_id]: { text, respondedAt } }
  */
 export async function getReviewResponses() {
-  const res = await get(ENDPOINTS.reviewResponse);
+  const res = await get(ENDPOINTS.reviewResponse, {
+  store_id: STORE_ID
+})
   const list = Array.isArray(res?.responses) ? res.responses : Array.isArray(res) ? res : null;
   if (!list) {
     console.warn('[review-response] 예상과 다른 응답:', res);
