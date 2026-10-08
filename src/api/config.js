@@ -1,8 +1,8 @@
 /**
  * n8n API 설정 — 주소는 이 파일에서만 관리합니다. (브라우저 → n8n 직접 호출)
- * VITE_N8N_BASE_URL 환경변수로 호스트를 바꿀 수 있습니다.
+ * 현재 운영 n8n 워크스페이스 주소를 고정 사용합니다.
  */
-export const N8N_BASE_URL = (import.meta.env.VITE_N8N_BASE_URL || 'https://gogogogommmm.app.n8n.cloud').replace(/\/+$/, '');
+export const N8N_BASE_URL = 'https://gogogogommmm.app.n8n.cloud';
 
 export const ENDPOINTS = {
   resourceStock: '/webhook/resource-stock', //                     7-1 재료 수량·유통기한 입력 (PUT)
