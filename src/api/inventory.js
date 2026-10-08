@@ -113,30 +113,58 @@ export async function getTargetSalesItems() {
 }
 
 
-/** 재료 재고 기반 오늘 목표 판매량 AI 추천 — POST /webhook/recommand-stock */
-export async function getTargetSalesRecommendation() {
-  const data = await post(ENDPOINTS.recommendStock, { store_id: STORE_ID });
-  const list = pickList(data, ['recommendations', 'menus', 'items', 'stock_items', 'stocks']);
+/**
+ * 오늘 목표 판매량 AI 추천 — POST /webhook/recommand-stock
+ * request:  { store_id, growth_rate? }
+ * response: { store_id, sales_targets: [{ item_id, recommended_stock }], summary }
+ */
+export async function getTargetSalesRecommendation({ growth_rate } = {}) {
+  const data = await post(ENDPOINTS.recommendStock, {
+    store_id: STORE_ID,
+    ...(growth_rate != null && growth_rate !== '' ? { growth_rate: Number(growth_rate) } : {}),
+  });
+
+  const list = Array.isArray(data?.sales_targets)
+    ? data.sales_targets
+    : Array.isArray(data?.data?.sales_targets)
+      ? data.data.sales_targets
+      : null;
+
   if (!list) throw new ApiError('목표 판매량 추천 응답 형식을 확인할 수 없습니다.', 'INVALID_RESPONSE');
 
-  return list
-    .filter((r) => r?.item_id || r?.name || r?.item_name || r?.menu_name)
-    .map((r) => ({
+  return {
+    store_id: str(data?.store_id || data?.data?.store_id || STORE_ID),
+    summary: str(data?.summary || data?.data?.summary),
+    items: list
+      .filter((r) => r?.item_id)
+      .map((r) => ({
+        item_id: str(r.item_id),
+        recommended: num(r.recommended_stock),
+      }))
+      .filter((r) => r.recommended != null),
+  };
+}
+
+/** 추천 API의 기존 판매량 조회 — GET /webhook/recommand-stock?store_id=STORE_001 */
+export async function getRecommendationSalesHistory() {
+  const data = await get(ENDPOINTS.recommendStock, { store_id: STORE_ID });
+  const list = Array.isArray(data?.sales)
+    ? data.sales
+    : Array.isArray(data?.data?.sales)
+      ? data.data.sales
+      : [];
+
+  return {
+    store_id: str(data?.store_id || data?.data?.store_id || STORE_ID),
+    period_start: str(data?.period_start || data?.data?.period_start),
+    period_end: str(data?.period_end || data?.data?.period_end),
+    sales: list.map((r) => ({
       item_id: str(r.item_id),
-      name: str(r.name || r.item_name || r.menu_name || r.item_id),
-      recommended: num(
-        r.recommended_stock ??
-        r.recommended_target_sales ??
-        r.recommended_target ??
-        r.recommended_quantity ??
-        r.recommend_stock ??
-        r.target_stock ??
-        r.target_sales ??
-        r.value ??
-        r.stock
-      ),
-      reason: str(r.reason || r.message || r.description),
-    }));
+      name: str(r.name),
+      sold_qty: num(r.sold_qty),
+      reason: str(r.reason),
+    })),
+  };
 }
 
 /** 재료 목록 최신 값 (localStorage 캐시 갱신 포함) */
