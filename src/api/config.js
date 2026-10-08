@@ -7,7 +7,8 @@ export const N8N_BASE_URL = (import.meta.env.VITE_N8N_BASE_URL || 'https://gogom
 export const ENDPOINTS = {
   resourceStock: '/webhook/resource-stock', //                     7-1 재료 수량·유통기한 입력 (PUT)
   ownerResourceManagement: '/webhook/owner-resource-management', // 재료 목록 (GET) · AI 재료 분석 (POST)
-  stockItemStock: '/webhook/stock-item-stock', //                  7-3 목표 판매량 저장 (POST)
+  stockItemStock: '/webhook/stock-item-stock', //                  오늘 목표 판매량 조회(GET) · 저장(POST)
+  recommendStock: '/webhook/recommand-stock', //                    재료 재고 기반 오늘 목표 판매량 AI 추천 (POST)
   menu: '/webhook/menu', //                                        메뉴 목록·현재 목표량 menus[].stock (GET)
   reviewList: '/webhook/review-list', //                           고객 리뷰 목록 (POST)
   reviewGenerate: '/webhook/review-generate', //                   AI 리뷰 답변 생성 (POST)

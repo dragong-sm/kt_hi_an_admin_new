@@ -112,6 +112,33 @@ export async function getTargetSalesItems() {
     }));
 }
 
+
+/** 재료 재고 기반 오늘 목표 판매량 AI 추천 — POST /webhook/recommand-stock */
+export async function getTargetSalesRecommendation() {
+  const data = await post(ENDPOINTS.recommendStock, { store_id: STORE_ID });
+  const list = pickList(data, ['recommendations', 'menus', 'items', 'stock_items', 'stocks']);
+  if (!list) throw new ApiError('목표 판매량 추천 응답 형식을 확인할 수 없습니다.', 'INVALID_RESPONSE');
+
+  return list
+    .filter((r) => r?.item_id || r?.name || r?.item_name || r?.menu_name)
+    .map((r) => ({
+      item_id: str(r.item_id),
+      name: str(r.name || r.item_name || r.menu_name || r.item_id),
+      recommended: num(
+        r.recommended_stock ??
+        r.recommended_target_sales ??
+        r.recommended_target ??
+        r.recommended_quantity ??
+        r.recommend_stock ??
+        r.target_stock ??
+        r.target_sales ??
+        r.value ??
+        r.stock
+      ),
+      reason: str(r.reason || r.message || r.description),
+    }));
+}
+
 /** 재료 목록 최신 값 (localStorage 캐시 갱신 포함) */
 export const fetchResources = ({ force = false } = {}) => fetchFresh(CACHE_KEYS.resources, getResources, { force });
 export const cachedResources = () => readCache(CACHE_KEYS.resources);
