@@ -20,14 +20,9 @@ function menuList(v) {
  * 필드명이 달라지면 이 함수에서만 맞춥니다. 반환: { [review_id]: { text, respondedAt } }
  */
 export async function getReviewResponses() {
-  const res = await get(ENDPOINTS.reviewResponse, {
-  store_id: STORE_ID
-})
+  const res = await get(ENDPOINTS.reviewResponse);
   const list = Array.isArray(res?.responses) ? res.responses : Array.isArray(res) ? res : null;
-  if (!list) {
-    console.warn('[review-response] 예상과 다른 응답:', res);
-    throw new ApiError('사장님 답변 응답 형식을 확인할 수 없습니다.', 'INVALID_RESPONSE');
-  }
+  if (!list) throw new ApiError('사장님 답변 응답 형식을 확인할 수 없습니다.', 'INVALID_RESPONSE');
   const map = {};
   for (const r of list) {
     const id = str(r?.review_id);
@@ -47,10 +42,7 @@ export async function getReviewList(storeId = STORE_ID) {
     post(ENDPOINTS.reviewList, { store_id: storeId }),
     getReviewResponses().catch((e) => e),
   ]);
-  if (!Array.isArray(res?.reviews)) {
-    console.warn('[review-list] 예상과 다른 응답:', res);
-    throw new ApiError('리뷰 목록 응답 형식을 확인할 수 없습니다.', 'INVALID_RESPONSE');
-  }
+  if (!Array.isArray(res?.reviews)) throw new ApiError('리뷰 목록 응답 형식을 확인할 수 없습니다.', 'INVALID_RESPONSE');
   const answers = responses instanceof Error ? {} : responses;
   const reviews = res.reviews.map((r) => ({
     ...r,
@@ -90,7 +82,6 @@ function toCandidates(data) {
     const c = { greetings: part(src, KEYS.greetings), bodies: part(src, KEYS.bodies), closings: part(src, KEYS.closings) };
     if (c.greetings.length || c.bodies.length || c.closings.length) return c;
   }
-  console.warn('[review-generate] 예상과 다른 응답:', data);
   throw new ApiError('AI 답변 응답에서 인삿말·본문·마무리 후보를 찾지 못했습니다.', 'INVALID_RESPONSE');
 }
 
@@ -124,7 +115,17 @@ export function saveOwnerReviewResponse(review, finalResponse) {
   });
 }
 
+/**
+ * localStorage에는 화면 표시와 API 호출(review-generate·owner-review-response)에 쓰는 필드만 저장합니다.
+ * review-list 응답에 다른 고객 정보가 함께 와도 브라우저에 남기지 않습니다. (화면에서 쓰는 값은 그대로)
+ */
+const CACHE_FIELDS = ['review_id', 'member_id', 'nickname', 'recent_order_menu', 'review_question', 'review_answer', 'rating', 'menu_list', 'owner_response'];
+const toCache = (data) => ({
+  ...data,
+  reviews: data.reviews.map((r) => Object.fromEntries(CACHE_FIELDS.filter((k) => k in r).map((k) => [k, r[k]]))),
+});
+
 /** 리뷰 목록 최신 값 (localStorage 캐시 갱신 포함) */
-export const fetchReviews = ({ force = false } = {}) => fetchFresh(CACHE_KEYS.reviews, getReviewList, { force });
+export const fetchReviews = () => fetchFresh(CACHE_KEYS.reviews, getReviewList, toCache);
 export const cachedReviews = () => readCache(CACHE_KEYS.reviews);
 export const invalidateReviews = () => invalidate(CACHE_KEYS.reviews);

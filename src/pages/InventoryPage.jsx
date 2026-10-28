@@ -8,9 +8,6 @@ import Icon from '../components/Icon';
 import TargetSalesModal from '../features/inventory/TargetSalesModal';
 import ResourceTable from '../features/inventory/ResourceTable';
 import ResourceDetailDrawer from '../features/inventory/ResourceDetailDrawer';
-import ResourceInputModal from '../features/inventory/ResourceInputModal';
-import { useRouter } from '../router';
-import { expiryInfo } from '../config/inventoryLabels';
 
 /** 목표 판매량 모달 하루 1회 자동 노출 (기기 날짜 기준, localStorage) */
 const TARGET_MODAL_KEY = 'hian-admin:target-modal-shown';
@@ -45,8 +42,6 @@ export default function InventoryPage() {
   const [edits, setEdits] = useState({});
   const [selectedId, setSelectedId] = useState(null);
   const [targetOpen, setTargetOpen] = useState(shouldAutoOpen);
-  const [resourceInputOpen, setResourceInputOpen] = useState(false);
-  const { refreshKey } = useRouter();
   const aiSeq = useRef(0);
   const listSeq = useRef(0);
 
@@ -55,7 +50,7 @@ export default function InventoryPage() {
     const seq = ++listSeq.current;
     setList((s) => (s.items.length ? s : { ...s, status: 'loading', error: null }));
     try {
-      const items = await fetchResources({ force: true });
+      const items = await fetchResources();
       if (seq !== listSeq.current) return;
       setList({ status: 'success', items, error: null, stale: false });
       setEdits({});
@@ -92,74 +87,14 @@ export default function InventoryPage() {
 
   useEffect(() => {
     loadList();
-  }, [loadList, refreshKey]);
-
-  useEffect(() => {
     analyze();
-  }, [analyze]);
+  }, [loadList, analyze]);
 
   const aiReady = ai.status === 'success';
 
-  /**
-   * 재료 기본 정보 + AI 분석 결과 + 저장한 수정값
-   * AI 응답이 특정 재료를 생략하더라도 표가 빈칸이 되지 않도록 기본 상태를 보완합니다.
-   * GET 응답에 상태/추천 값이 있으면 그것을 우선하고, 정말 아무 분석값도 없을 때만 정상 상태 안내를 사용합니다.
-   */
+  /** 재료 기본 정보 + AI 분석 결과 + 저장한 수정값 */
   const resources = useMemo(
-    () =>
-      list.items.map((r) => {
-        const analyzed = aiReady ? ai.byId[r.resource_id] : null;
-        if (!aiReady) return { ...r, ...edits[r.resource_id] };
-
-        let merged = { ...r, ...(analyzed || {}), ...edits[r.resource_id] };
-
-        // AI가 일일 목표 소모량/예상 소진일 중 하나만 주는 경우 현재 재고로 나머지 값을 계산해 보완합니다.
-        // 둘 다 없는 경우에는 임의 값을 만들지 않습니다.
-        const stock = Number(merged.stock);
-        const daily = Number(merged.daily_target_usage);
-        const depletion = Number(merged.expected_depletion_days);
-        if (Number.isFinite(stock) && Number.isFinite(daily) && daily > 0 && !Number.isFinite(depletion)) {
-          merged = { ...merged, expected_depletion_days: stock / daily };
-        } else if (Number.isFinite(stock) && Number.isFinite(depletion) && depletion > 0 && !Number.isFinite(daily)) {
-          merged = { ...merged, daily_target_usage: stock / depletion };
-        }
-
-        if (analyzed || merged.stock_status || merged.title || merged.action || merged.cta_label) return merged;
-
-        const days = expiryInfo(merged.expiration_date, merged.days_to_expiry)?.days;
-        if (days != null && days < 0) {
-          return {
-            ...merged,
-            stock_status: 'EXPIRED',
-            alert_type: 'EXPIRED',
-            title: '폐기 필요',
-            reason: '유통기한이 지난 재료예요.',
-            action: '사용하지 말고 폐기 여부를 확인해 주세요.',
-            cta_type: 'EXPIRY_CHECK',
-            cta_label: '유통기한 확인',
-          };
-        }
-        if (Number(merged.stock) === 0) {
-          return {
-            ...merged,
-            stock_status: 'SOLD_OUT',
-            alert_type: 'SOLD_OUT',
-            title: '재고 보충 필요',
-            reason: '현재 재고가 0이에요.',
-            action: '재고 보충 여부를 확인해 주세요.',
-            cta_type: 'PURCHASE_ORDER',
-            cta_label: '발주 검토',
-          };
-        }
-        return {
-          ...merged,
-          stock_status: 'NORMAL',
-          title: '현재 상태 유지',
-          reason: '현재 재고와 유통기한에 특이사항이 없어요.',
-          action: '현재 상태를 유지해 주세요.',
-          cta_label: '현재 상태 유지',
-        };
-      }),
+    () => list.items.map((r) => ({ ...r, ...(aiReady ? ai.byId[r.resource_id] : null), ...edits[r.resource_id] })),
     [list.items, edits, ai, aiReady],
   );
 
@@ -178,8 +113,6 @@ export default function InventoryPage() {
   }, [resources, aiReady]);
 
   const hint = ai.status === 'loading' ? '분석중...' : ai.status === 'error' ? 'AI 분석 실패' : undefined;
-  const status = list.status;
-  const error = list.error;
 
   return (
     <div className="page">
@@ -206,15 +139,10 @@ export default function InventoryPage() {
             <h2 id="resource-list-title">재료 재고</h2>
             <span className="card-note">행을 누르면 AI 분석 결과와 수량·유통기한을 확인·수정할 수 있어요</span>
           </div>
-          <div className="resource-head-actions">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setResourceInputOpen(true)} disabled={!resources.length}>
-              재료 입력
-            </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={analyze} disabled={ai.status === 'loading'}>
-              <Icon name="refresh" size={15} />
-              {ai.status === 'loading' ? '분석중...' : 'AI 분석 다시하기'}
-            </button>
-          </div>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={analyze} disabled={ai.status === 'loading'}>
+            <Icon name="refresh" size={15} />
+            {ai.status === 'loading' ? '분석중...' : 'AI 분석 다시하기'}
+          </button>
         </div>
         {list.staleError && (
           <p className="field-msg card-alert muted-note">최신 재료 목록을 불러오지 못해 마지막으로 저장된 정보를 보여주고 있어요. ({list.staleError})</p>
@@ -222,27 +150,16 @@ export default function InventoryPage() {
         {ai.status === 'error' && <p className="field-msg is-error card-alert">AI 재고 분석을 완료하지 못했어요: {ai.error}</p>}
         {resources.length > 0 ? (
           <ResourceTable resources={resources} aiStatus={ai.status} editedIds={new Set(Object.keys(edits))} onSelect={setSelectedId} />
-        ) : status === 'loading' ? (
+        ) : list.status === 'loading' ? (
           <LoadingState message="재료 목록을 불러오고 있어요..." />
-        ) : status === 'error' ? (
-          <EmptyState variant="error" title="재료 정보를 불러오지 못했어요" description={error} onRetry={loadList} />
+        ) : list.status === 'error' ? (
+          <EmptyState variant="error" title="재료 정보를 불러오지 못했어요" description={list.error} onRetry={loadList} />
         ) : (
           <EmptyState title="등록된 재료가 없어요" description="n8n RESOURCE 시트에 재료가 등록되면 이곳에 표시됩니다." />
         )}
       </section>
 
       <TargetSalesModal open={targetOpen} onClose={() => setTargetOpen(false)} onSaved={analyze} />
-
-      <ResourceInputModal
-        open={resourceInputOpen}
-        resources={resources}
-        onClose={() => setResourceInputOpen(false)}
-        onSaved={async () => {
-          invalidateResources();
-          await loadList();
-          await analyze();
-        }}
-      />
 
       <ResourceDetailDrawer
         resource={resources.find((r) => r.resource_id === selectedId)}

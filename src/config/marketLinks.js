@@ -23,6 +23,3 @@ export function getMarketSearchLink(marketKey, itemName) {
   if (!template || !itemName) return null;
   return template.replace('{query}', encodeURIComponent(itemName));
 }
-
-export const getNaverSearchLink = (itemName) => getMarketSearchLink('NAVER', itemName);
-export const getCoupangSearchLink = (itemName) => getMarketSearchLink('COUPANG', itemName);

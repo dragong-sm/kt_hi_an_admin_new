@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import Icon from './Icon';
+import useOverlay from './useOverlay';
 
 /**
  * 우측 Drawer — Esc / 배경 클릭으로 닫힘, 열릴 때 포커스 이동, 닫히면 원래 위치로 포커스 복귀
@@ -7,22 +8,7 @@ import Icon from './Icon';
 export default function Drawer({ open, onClose, title, headerExtra, children }) {
   const panelRef = useRef(null);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const opener = document.activeElement;
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    panelRef.current?.focus();
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
-      if (opener && typeof opener.focus === 'function') opener.focus();
-    };
-  }, [open, onClose]);
+  useOverlay(open, onClose, panelRef);
 
   if (!open) return null;
 

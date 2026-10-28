@@ -4,7 +4,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v2.0 |
+| 버전 | v2.1 |
 | GitHub Repository | `Hi-an-admin` |
 | 배포 | Vercel (Framework: Vite · Build: `npm run build` · Output: `dist`) |
 | 스택 | React 19 + Vite 7 (JavaScript), 외부 UI·차트 라이브러리 없음 |
@@ -82,9 +82,16 @@ src/
 
 - 첫 접속 시 재료 목록과 리뷰 목록을 동시에 미리 불러와 localStorage에 저장합니다(`hian-admin:cache:v1:*`).
 - 다음 접속에서는 캐시를 먼저 보여주고, 실제 API를 다시 호출해 최신 값으로 교체합니다. 최신 값을 못 받으면 "마지막으로 저장된 정보" 안내를 표시합니다.
+- 리뷰 캐시에는 화면 표시와 API 호출에 쓰는 필드(`review_id, member_id, nickname, recent_order_menu, review_question, review_answer, rating`, 표시용 메뉴·사장님 답변)만 저장합니다. 응답에 다른 고객 정보가 있어도 브라우저에 남기지 않습니다.
 - 재료 수량·유통기한 저장이나 리뷰 답변 저장 후에는 해당 캐시를 지우고 다시 불러옵니다. AI 분석 결과와 메뉴 목록은 캐시하지 않습니다.
 
 ## 변경 이력
+
+- **v2.1**: refactor: 코드 중복 정리 및 리뷰 데이터 노출 최소화
+  - Drawer·Modal의 공통 동작(Esc 닫기·스크롤 잠금·포커스 이동/복귀)을 `useOverlay`로 합쳤습니다.
+  - 사용하지 않는 함수·아이콘·CSS를 지우고 중복 CSS 규칙을 합쳤습니다.
+  - 응답 형식 오류 시 리뷰 데이터를 콘솔에 출력하던 코드를 지웠습니다. 리뷰 캐시에는 필요한 필드만 저장합니다.
+  - API 주소·method·body, 호출 순서, 화면 동작은 바뀌지 않았습니다.
 
 - **v2.0**: feat: 리뷰 카드에 사장님 답변 조회 및 UI 재구성
   - `review-response`를 GET(파라미터 없음)으로 호출해 `review_id` 기준으로 사장님 답변을 카드에 표시합니다.

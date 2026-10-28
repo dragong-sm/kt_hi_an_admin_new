@@ -93,16 +93,17 @@ export default function ResourceDetailDrawer({ resource, aiStatus, onClose, onSa
   const alert = resource ? alertInfo(resource.alert_type) : null;
   const cta = resource ? ctaText(resource) : '';
   const hasAi = resource && (resource.title || resource.reason || resource.action || cta);
+  const status = resource && aiStatus === 'success' ? displayStockStatus(resource) : '';
 
   return (
-    <Drawer open={Boolean(resource)} onClose={onClose} title={resource?.name ?? ''} headerExtra={resource && aiStatus === 'success' && <StatusBadge status={displayStockStatus(resource)} />}>
+    <Drawer open={Boolean(resource)} onClose={onClose} title={resource?.name ?? ''} headerExtra={status && <StatusBadge status={status} />}>
       {resource && (
         <>
           <section aria-label="현재 정보">
             <dl className="detail-stats">
               <div>
                 <dt>현재 수량</dt>
-                <dd className={aiStatus === 'success' && displayStockStatus(resource) === 'SOLD_OUT' ? 'is-danger' : undefined}>{formatQty(resource.stock, resource.unit)}</dd>
+                <dd className={status === 'SOLD_OUT' ? 'is-danger' : undefined}>{formatQty(resource.stock, resource.unit)}</dd>
               </div>
               <div>
                 <dt>유통기한</dt>
@@ -118,7 +119,7 @@ export default function ResourceDetailDrawer({ resource, aiStatus, onClose, onSa
                 </dd>
               </div>
               <div>
-                <dt>일일 목표 소모량</dt>
+                <dt>일일 목표 사용량</dt>
                 <dd className="dd-sm">{aiStatus === 'loading' ? '분석중...' : formatQty(resource.daily_target_usage, resource.unit)}</dd>
               </div>
             </dl>
@@ -138,6 +139,7 @@ export default function ResourceDetailDrawer({ resource, aiStatus, onClose, onSa
               <>
                 {resource.title && <p className="detail-ai-label">{resource.title}</p>}
                 {resource.reason && <p className="detail-ai-message">{resource.reason}</p>}
+                {resource.action && <p className="detail-ai-action">{resource.action}</p>}
                 {cta && (
                   <p className="rec-cta">
                     <Icon name="sparkle" size={13} strokeWidth={2} />

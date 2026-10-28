@@ -1,9 +1,8 @@
 /**
  * localStorage 캐시 (stale-while-revalidate)
- * - 캐시는 화면을 빨리 띄우기 위한 임시 값입니다. 화면에 먼저 보여준 뒤 실제 API로 최신 값을 교체합니다.
- * - 기본 호출은 같은 요청을 공유하고 5초 내 최신값을 재사용합니다. (첫 접속 미리 불러오기 최적화)
- * - force=true 호출은 화면 재진입/사용자 갱신용으로 recent/inflight를 우회해 실제 API를 다시 호출합니다.
- * - 데이터를 변경한 뒤에는 invalidate()로 캐시를 지우고 새로 불러옵니다.
+ * - 캐시는 화면을 빨리 띄우기 위한 임시 값입니다. 화면에 먼저 보여준 뒤 항상 실제 API를 다시 호출해 최신 값으로 교체합니다.
+ * - 같은 요청이 동시에 일어나면 하나의 요청을 공유합니다. (첫 접속 미리 불러오기 ↔ 화면 진입)
+ * - 데이터를 변경한 뒤에는 invalidate()로 캐시를 지우고 새로 불러옵니다. 그 전에 시작된 요청 결과는 캐시에 쓰지 않습니다.
  */
 const PREFIX = 'hian-admin:cache:v1:';
 const inflight = new Map(); // key → { promise, version }
@@ -22,9 +21,9 @@ export function readCache(key) {
   }
 }
 
-function writeCache(key, data) {
+function writeCache(key, data, toCache) {
   try {
-    localStorage.setItem(PREFIX + key, JSON.stringify({ savedAt: Date.now(), data }));
+    localStorage.setItem(PREFIX + key, JSON.stringify({ savedAt: Date.now(), data: toCache(data) }));
   } catch {
     /* 저장 공간 부족 등 — 캐시 없이 동작 */
   }
@@ -44,23 +43,20 @@ export function invalidate(key) {
 
 /**
  * 실제 API 호출 → 성공하면 캐시 갱신.
- * 기본 호출은 진행 중 요청/5초 내 최신값을 재사용합니다.
- * force=true면 반드시 새 네트워크 요청을 실행합니다.
+ * 진행 중인 같은 요청이 있으면 그 결과를 함께 쓰고, 5초 안에 받은 최신 값이 있으면 그대로 사용 (미리 불러오기 직후 화면 진입)
+ * toCache: localStorage에 저장할 값만 고르는 함수 (선택). 반환 값은 항상 원본 그대로입니다.
  */
-export function fetchFresh(key, fetcher, { force = false } = {}) {
-  if (!force) {
-    const running = inflight.get(key);
-    if (running) return running.promise;
-    const last = recent.get(key);
-    if (last && Date.now() - last.at < RECENT_MS) return Promise.resolve(last.data);
-  }
-
+export function fetchFresh(key, fetcher, toCache = (data) => data) {
+  const running = inflight.get(key);
+  if (running) return running.promise;
+  const last = recent.get(key);
+  if (last && Date.now() - last.at < RECENT_MS) return Promise.resolve(last.data);
   const version = (versions.get(key) || 0) + 1;
   versions.set(key, version);
   const promise = fetcher()
     .then((data) => {
       if (versions.get(key) === version) {
-        writeCache(key, data);
+        writeCache(key, data, toCache);
         recent.set(key, { at: Date.now(), data });
       }
       return data;
@@ -68,8 +64,6 @@ export function fetchFresh(key, fetcher, { force = false } = {}) {
     .finally(() => {
       if (inflight.get(key)?.version === version) inflight.delete(key);
     });
-
-  // force 요청은 기존 inflight를 재사용하지 않지만, 이후 일반 호출은 이 최신 요청을 공유할 수 있게 등록합니다.
   inflight.set(key, { promise, version });
   return promise;
 }

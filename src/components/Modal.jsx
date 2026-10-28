@@ -1,31 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import Icon from './Icon';
+import useOverlay from './useOverlay';
 
 /** 가운데 모달 — Esc / 배경 클릭으로 닫힘, 닫히면 원래 위치로 포커스 복귀 */
-export default function Modal({ open, onClose, title, description, footer, children, className = '' }) {
+export default function Modal({ open, onClose, title, description, footer, children }) {
   const panelRef = useRef(null);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const opener = document.activeElement;
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    panelRef.current?.focus();
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
-      opener?.focus?.();
-    };
-  }, [open, onClose]);
+  useOverlay(open, onClose, panelRef);
 
   if (!open) return null;
 
   return (
     <div className="modal-root">
       <div className="drawer-backdrop" onClick={onClose} aria-hidden="true" />
-      <div className={`modal ${className}`.trim()} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabIndex={-1} ref={panelRef}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabIndex={-1} ref={panelRef}>
         <header className="drawer-head">
           <div>
             <h2 id="modal-title" className="modal-title">{title}</h2>
